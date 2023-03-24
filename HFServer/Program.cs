@@ -1,12 +1,12 @@
 using Hangfire;
+using Hangfire.Dashboard.BasicAuthorization;
 using HFJobs;
 using HFServer;
-using HFServer.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 const string connectionString = "Host=localhost;Port=5432;Database=hangfireWorkshop;Username=postgres;Password=postgres";
-        
+
 HFJobs.Registration.AddHangFireJobStorage(connectionString);
 builder.Services.AddHangFireRecurringJobs();
 builder.Services.AddHangFireExecutors();
@@ -14,11 +14,26 @@ builder.Services.AddHangFire();
 
 var app = builder.Build();
 
-app.UseHangfireDashboard("/jobs", new DashboardOptions()
+app.UseHangfireDashboard("/jobs", new DashboardOptions
 {
-    Authorization = new[] { new HFAuthorizationFilter() }
+    Authorization = new[]
+    {
+        new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+        {
+            RequireSsl = false,
+            SslRedirect = false,
+            LoginCaseSensitive = true,
+            Users = new[]
+            {
+                new BasicAuthAuthorizationUser
+                {
+                    Login = "admin",
+                    PasswordClear = "login"
+                }
+            }
+        })
+    }
 });
 
-app.MapHangfireDashboard();
 app.RunMonitoringRecurringJobs();
 app.Run();

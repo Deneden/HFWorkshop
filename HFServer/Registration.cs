@@ -1,4 +1,6 @@
 ﻿using Hangfire;
+using Hangfire.Heartbeat;
+using Hangfire.Heartbeat.Server;
 using HFJobs;
 using HFJobs.Interfaces;
 
@@ -15,10 +17,15 @@ public static class Registration
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
                 // set serializer for more compact payloads
                 .UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings();
+                .UseRecommendedSerializerSettings()
+                .UseHeartbeatPage(checkInterval: TimeSpan.FromSeconds(1));
         });
 
-        services.AddHangfireServer(serverOptions => serverOptions.Queues = new[] { Queues.DontCare, Queues.Default, Queues.Hot });
+        services.AddHangfireServer(
+            (_, serverOptions) => serverOptions.Queues = new[] { Queues.DontCare, Queues.Default, Queues.Hot },
+            JobStorage.Current, 
+            new[] { new ProcessMonitor(checkInterval: TimeSpan.FromSeconds(1))}
+            );
     }
 
     /// <summary>
